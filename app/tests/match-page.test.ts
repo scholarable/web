@@ -56,19 +56,16 @@ const recommendation = (callId: string, status: Recommendation["status"], matche
   },
 } as Recommendation);
 
-test("the start page counts every listed scholarship and links on when one page cannot hold them all", () => {
-  // The loader sends every listed call; the page shows the first 100 cards and links on.
+test("the start page counts every listed scholarship and links to the list instead of showing it", () => {
+  // The loader still sends every listed call: the chat counts them.
   const many = Array.from({ length: 130 }, (_, index) => item(String(index + 1), ["degree"], {}, { applyNow: index === 0 }));
   const html = render(undefined, undefined, { ...listState, total: 130, scholarships: many });
-  assert.equal(html.match(/<li class="card">/g)?.length, 100);
-  assert.match(html, /<b>130 geprüfte Stipendien<\/b> · 1 jetzt offen · nächste Frist <span class="hot">26\. Okt\., noch 6 Tage<\/span>/);
   assert.match(html, /130 geprüfte Stipendien für dein Studium/);
-  assert.match(html, /Alle 130 ansehen/);
-  assert.match(html, /<a rel="next"[^>]*href="\/scholarships\?page=1"[^>]*>Weitere Stipendien<\/a>/);
-  assert.doesNotMatch(render(), /Weitere Stipendien/);
+  assert.match(html, /<a class="jump" href="\/scholarships"[^>]*>Alle 130 ansehen <svg/);
+  assert.doesNotMatch(html, /<li class="card">|id="list"|Synthetic call|Weitere Stipendien/);
 });
 
-test("first screen is one chat box with tap answers and the list right below, no form fields or uploads", () => {
+test("first screen is one chat box with tap answers on the blue block, no list, note, form fields or uploads", () => {
   const html = render();
   assert.match(html, /<h1 id="hero-h">Finde dein <em>Stipendium\.<\/em><\/h1>/);
   const composer = html.match(/<form class="composer big"[^>]*>/)?.[0] || "";
@@ -78,10 +75,9 @@ test("first screen is one chat box with tap answers and the list right below, no
   assert.doesNotMatch(html, /<input id="scholarship-goal"[^>]*name=/, "typed text never posts before the page is ready");
   assert.match(html, /<button class="send" aria-label="Senden" disabled=""/);
   for (const chip of ["Bachelor", "Master", "Promotion", "Weiß ich noch nicht"]) assert.match(html, new RegExp(`class="chip"[^>]*>${chip}</button>`));
-  assert.match(html, /Bitte keine Namen oder Kontaktdaten/);
+  assert.doesNotMatch(html, /Bitte keine Namen oder Kontaktdaten|aria-describedby/);
   assert.match(html, /<noscript>/);
-  assert.match(html, /id="list"/);
-  assert.match(html, /Synthetic call 1/);
+  assert.doesNotMatch(html, /id="list"|Synthetic call 1/);
   for (const field of ["adult", "institution", "degree_level", "subject", "semester_number", "future_plan"]) assert.doesNotMatch(html, new RegExp(`name="${field}"`));
   assert.doesNotMatch(html, /type="file"|name="(?:citizenship|grade|email|cv)"/);
 });
@@ -126,7 +122,7 @@ test("a match result sorts and labels: named level first, not stated after, conf
   assert.equal(callFit(result, "silent", [])?.level, "none");
   assert.equal(callFit(result, "conflict", ["degree"])?.conflict, true);
   const answers = { facts: { degree_level: "bachelor" }, adult: "yes", asked: [], chat: [], proposal: null, result, loading: false, error: null } as AnswersState;
-  assert.equal(resultSummary(items, answers), "1 Stipendium nennt Bachelor ausdrücklich, es steht jetzt oben. Bei 1 steht kein Studienniveau, es kommt danach. Ganz unten eingeklappt: 1 passt laut Regeln nicht.");
+  assert.equal(resultSummary(items, answers), "1 Stipendium nennt Bachelor ausdrücklich, es steht in deiner Liste oben. Bei 1 steht kein Studienniveau, es kommt danach. Ganz unten eingeklappt: 1 passt laut Regeln nicht.");
   const page = html(createElement(CardList, { items, result, level: "bachelor", save: noSave }));
   // The chat's labels work inside the groups: named first, grouped by status; no level stated after; conflicts folded.
   assert.match(page, /<h2 class="group-h" id="group-open">Jetzt offen <span class="count">1<\/span><\/h2>/);
@@ -201,14 +197,14 @@ test("the summary line counts the whole list, open now and the next deadline amo
 });
 
 test("filters are links that keep the other choices and mark the current one", () => {
-  const tools = html(createElement(ListTools, { path: "/", filters: browseFilters(new URL("https://example.test/?degree=master&q=stiftung")), hash: "#list" }));
-  assert.match(tools, /<a class="filter-chip" aria-current="true" href="\/\?q=stiftung&amp;degree=master#list"[^>]*>Alle<\/a>/);
-  assert.match(tools, /href="\/\?q=stiftung&amp;degree=master&amp;status=open#list"[^>]*>Jetzt offen<\/a>/);
-  assert.match(tools, /href="\/\?q=stiftung&amp;degree=master&amp;status=soon#list"[^>]*>Öffnet bald<\/a>/);
-  assert.match(tools, /href="\/\?q=stiftung&amp;degree=bachelor#list"[^>]*>Bachelor<\/a>/);
-  assert.match(tools, /aria-current="true" href="\/\?q=stiftung#list"[^>]*>Master<\/a>/, "tapping the chosen level clears it");
-  assert.match(tools, /aria-current="true" href="\/\?q=stiftung&amp;degree=master#list"[^>]*>nach Frist<\/a>/);
-  assert.match(tools, /href="\/\?q=stiftung&amp;degree=master&amp;sort=amount#list"[^>]*>nach Betrag<\/a>/);
+  const tools = html(createElement(ListTools, { path: "/scholarships", filters: browseFilters(new URL("https://example.test/?degree=master&q=stiftung")) }));
+  assert.match(tools, /<a class="filter-chip" aria-current="true" href="\/scholarships\?q=stiftung&amp;degree=master"[^>]*>Alle<\/a>/);
+  assert.match(tools, /href="\/scholarships\?q=stiftung&amp;degree=master&amp;status=open"[^>]*>Jetzt offen<\/a>/);
+  assert.match(tools, /href="\/scholarships\?q=stiftung&amp;degree=master&amp;status=soon"[^>]*>Öffnet bald<\/a>/);
+  assert.match(tools, /href="\/scholarships\?q=stiftung&amp;degree=bachelor"[^>]*>Bachelor<\/a>/);
+  assert.match(tools, /aria-current="true" href="\/scholarships\?q=stiftung"[^>]*>Master<\/a>/, "tapping the chosen level clears it");
+  assert.match(tools, /aria-current="true" href="\/scholarships\?q=stiftung&amp;degree=master"[^>]*>nach Frist<\/a>/);
+  assert.match(tools, /href="\/scholarships\?q=stiftung&amp;degree=master&amp;sort=amount"[^>]*>nach Betrag<\/a>/);
 });
 
 test("correction measurement ignores new answers and counts each corrected field once", () => {

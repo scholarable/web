@@ -87,6 +87,11 @@ button:disabled { cursor: wait; opacity: .55; }
 .site-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 64px; padding: 0 16px; background: var(--canvas); border-bottom: 1px solid var(--line); }
 .discover-shell .site-header { background: var(--hero-bg); color: var(--hero-ink); border-bottom-color: transparent; }
 .discover-shell .site-header :focus-visible { outline-color: var(--hero-ink); }
+/* The chat page is blue from top to bottom, footer included (owner, 2026-10-28). */
+.discover-shell { background: var(--hero-bg); }
+.discover-shell .site-footer { border-top-color: var(--hero-soft); color: var(--hero-ink); }
+.discover-shell .site-footer strong { color: inherit; }
+.discover-shell .site-footer :focus-visible { outline-color: var(--hero-ink); }
 .wordmark { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 20px; font-weight: 600; letter-spacing: -.065em; text-decoration: none; }
 .logo-mark { display: block; width: 30px; height: 30px; fill: currentColor; }
 .site-nav { display: flex; align-items: center; gap: 2px; }
@@ -109,6 +114,8 @@ button:disabled { cursor: wait; opacity: .55; }
 .btn.line { border-color: var(--ink); color: var(--ink); }
 .btn.line[aria-pressed="true"] { background: var(--brand-soft); border-color: var(--brand-soft); color: var(--brand-text); }
 .btn.hero-line { border-color: var(--hero-line); color: var(--hero-ink); }
+.btn.hero-solid { background: var(--hero-ink); color: var(--hero-bg); }
+.btn.hero-solid:hover { opacity: .92; }
 .btn.sm { min-height: 44px; padding: 0 16px; font-size: 15px; }
 .btn.wide { width: 100%; }
 .btn.link { min-height: 44px; padding: 0 2px; border: 0; color: inherit; font-weight: 600; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; white-space: normal; text-align: left; }
@@ -127,10 +134,11 @@ button:disabled { cursor: wait; opacity: .55; }
 .save-form.wide { display: grid; width: 100%; }
 .saved-note { color: var(--muted); font-size: 14px; }
 
-/* Start: one chat on the blue block, the list right below */
+/* Start: one chat on the blue block; the list is its own page */
 .hero { background: var(--hero-bg); color: var(--hero-ink); padding: 22px 16px 40px; }
 .hero :focus-visible { outline-color: var(--hero-ink); }
 .hero.thread-mode { padding-top: 12px; padding-bottom: 32px; }
+.hero.start.thread-mode { align-content: start; }
 /* The start screen fills the first view (the header is 64px, 76px from 900px);
    decorative figures sit beside the text on wide screens, in a row under it otherwise. */
 .hero.start { position: relative; overflow: hidden; display: grid; align-content: center;
@@ -195,6 +203,7 @@ button:disabled { cursor: wait; opacity: .55; }
 .proposal dl div { display: grid; grid-template-columns: 9em minmax(0, 1fr); gap: 12px; }
 .proposal dt { color: var(--muted); } .proposal dd { font-weight: 700; }
 .chat-save { display: grid; gap: 8px; justify-items: start; }
+.to-list { justify-self: start; }
 .sample-help { display: grid; gap: 8px; justify-items: start; font-size: 14px; }
 .cv-panel { padding: 18px; border-radius: 20px; background: var(--surface); color: var(--ink); }
 .short-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 20px; border-radius: 24px; background: var(--surface); color: var(--ink); }

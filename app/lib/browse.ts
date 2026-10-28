@@ -26,7 +26,7 @@ export function browseFilters(url: URL) {
 }
 export type BrowseFilters = ReturnType<typeof browseFilters>;
 // The list's address with some choices changed; any change starts at page one.
-export function browseHref(path: string, filters: BrowseFilters, change: Partial<BrowseFilters> = {}, hash = "") {
+export function browseHref(path: string, filters: BrowseFilters, change: Partial<BrowseFilters> = {}) {
   const next = { ...filters, page: 0, ...change };
   const query = new URLSearchParams();
   if (next.search) query.set("q", next.search);
@@ -36,7 +36,7 @@ export function browseHref(path: string, filters: BrowseFilters, change: Partial
   if (next.openOnly) query.set("status", "open"); else if (next.soonOnly) query.set("status", "soon");
   if (next.byAmount) query.set("sort", "amount");
   if (next.page > 0) query.set("page", String(next.page));
-  return `${path}${query.size ? `?${query}` : ""}${hash}`;
+  return `${path}${query.size ? `?${query}` : ""}`;
 }
 export const browsePageHref = (filters: BrowseFilters, page: number) => browseHref("/scholarships", filters, { page });
 // Browse facets describe positive structured mentions, not an eligibility decision.

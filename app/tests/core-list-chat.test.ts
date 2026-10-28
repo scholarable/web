@@ -56,7 +56,7 @@ test("the chat and its counts cover every listed call, not the first page", () =
   const items = catalogue();
   const result = resultFor(items);
   // 20 calls name Bachelor; the other 90 and the Deutschlandstipendium card (80 calls) state none.
-  assert.equal(resultSummary(items, answers(result, {})), "20 Stipendien nennen Bachelor ausdrücklich, sie stehen jetzt oben. Bei 91 steht kein Studienniveau, sie kommen danach.");
+  assert.equal(resultSummary(items, answers(result, {})), "20 Stipendien nennen Bachelor ausdrücklich, sie stehen in deiner Liste oben. Bei 91 steht kein Studienniveau, sie kommen danach.");
   // LMU's Deutschlandstipendium is the 190th call by deadline, far beyond the old page of 100.
   assert.equal(institutionNote(items, "Ludwig-Maximilians-Universität München"),
     "Für Ludwig-Maximilians-Universität München steht das Deutschlandstipendium deiner Hochschule jetzt in der Liste. Die anderen Hochschulen stehen ganz unten, eingeklappt.");
@@ -132,7 +132,7 @@ test("with a university, another university's call folds away and is never Passt
   assert.match(card("haw"), /<span class="who-tag fit ">Hochschule selbst prüfen<\/span><span class="who-tag quiet">Nur an: Duale Hochschule Baden-Württemberg, German universities of applied sciences \(HAW\) and Fachhochschulen<\/span>/);
   assert.match(card("all"), /Passt zu dir/);
   assert.equal(resultSummary(items, answers(result, { institution: "Ludwig-Maximilians-Universität München" })),
-    "5 Stipendien nennen Bachelor ausdrücklich, sie stehen jetzt oben. Ganz unten eingeklappt: 5 nur für Studierende anderer Hochschulen.");
+    "5 Stipendien nennen Bachelor ausdrücklich, sie stehen in deiner Liste oben. Ganz unten eingeklappt: 5 nur für Studierende anderer Hochschulen.");
 });
 
 test("without an answer a call names its universities; one name that may be another's keeps it in the list", () => {

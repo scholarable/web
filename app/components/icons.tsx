@@ -6,7 +6,7 @@ export const BookmarkIcon = ({ filled = false }: { filled?: boolean }) =>
   <svg viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2.2} strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M6 3.5h12v17l-6-4.2-6 4.2z" /></svg>;
 export const ExternalIcon = () => <Stroke d="M7 17 17 7M8 7h9v9" />;
 export const BackIcon = () => <Stroke d="M15 6l-6 6 6 6" />;
-export const DownIcon = () => <Stroke d="M12 5v14M6 13l6 6 6-6" />;
+export const NextIcon = () => <Stroke d="M5 12h14M13 6l6 6-6 6" />;
 export const SendIcon = () => <Stroke d="M12 19V5M6 11l6-6 6 6" />;
 export const EditIcon = () => <Stroke d="M4 20h4L19 9l-4-4L4 16z" />;
 export const CheckIcon = () => <Stroke d="M5 12.5l4.5 4.5L19 7.5" width={3} />;

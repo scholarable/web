@@ -6,6 +6,7 @@ import { emailReady, type EmailEnv } from "./lib/email.server";
 import { chatAiReady, type ChatEnv } from "./lib/chat-understanding.server";
 import {
   isRouteErrorResponse,
+  Link,
   Links,
   Meta,
   Outlet,
@@ -70,9 +71,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* data-build is the sample-build marker scripts/demo_preflight.mjs looks for before a demo deploy. */}
         {publicDemoMode && <aside className="demo-banner" role="note" data-build="Demo — sample data"><strong>Demo mit erfundenen Daten</strong><span>Vier erfundene Stipendien zum Ausprobieren. Bewerben kannst du dich hier nirgends.</span></aside>}
         <header className="site-header">
-          <a className="wordmark" href="/" aria-label="Scholarable, zur Startseite"><LogoMark /><span>Scholarable</span></a>
+          {/* Links inside the app, so the chat's answers (tab memory) stay between the chat and the list. */}
+          <Link className="wordmark" to="/" aria-label="Scholarable, zur Startseite"><LogoMark /><span>Scholarable</span></Link>
           <nav className="site-nav" aria-label="Hauptnavigation">
-            <a className="nav-list" href="/scholarships" aria-current={current("/scholarships")}>Stipendien</a>
+            <Link className="nav-list" to="/scholarships" aria-current={current("/scholarships")}>Stipendien</Link>
             {demoMode && hasSavedPlan && <a href="/my-plan" aria-current={current("/my-plan")}><BookmarkIcon /><span>Gemerkt</span></a>}
             {!demoMode && root?.studentAccounts && <><a className="nav-profile" href="/profile" aria-current={current("/profile")}>Profil</a><a href="/account" aria-current={current("/account")}><BookmarkIcon /><span>Gemerkt</span></a></>}
           </nav>

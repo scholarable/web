@@ -37,11 +37,14 @@ export default function Scholarships() {
   const searching = navigation.state !== "idle";
   const items = data.state === "ready" ? data.scholarships : [];
   const level = answers.result && answers.facts.degree_level ? answers.facts.degree_level : null;
+  // Sorted by the chat's answers: say so and lead back to change them.
+  const sorted = !!answers.result && !demoMode && !data.family;
   const filtered = !!(data.search || data.openOnly || data.soonOnly || data.degree || data.subject || data.family);
   const lastChecked = items.map(item => item.lastChecked).filter((value): value is string => !!value).sort().at(-1);
   return <main className="list list-page">
-    <div className="list-head"><h1>{demoMode ? "Beispiel-Stipendien" : data.family ? `${familyTitle(data.family)} an jeder Hochschule` : "Alle Stipendien"}</h1>
+    <div className="list-head"><h1>{demoMode ? "Beispiel-Stipendien" : data.family ? `${familyTitle(data.family)} an jeder Hochschule` : sorted ? "Für dich sortiert" : "Alle Stipendien"}</h1>
       <p className="lede">{demoMode ? "Erfundene Beispiele zum Ausprobieren von Liste, Seite und Abgleich." : data.family ? "Jede Hochschule vergibt es selbst, mit eigenen Fristen, Regeln und Unterlagen. Such deine Hochschule heraus; maßgeblich bleibt ihre Seite."
+        : sorted ? <>Nach deinen Antworten im Chat: Was laut den geprüften Regeln passt, steht oben. <Link className="text-link" to="/">Antworten ändern</Link></>
         : "Jedes Stipendium hier ist mit den offiziellen Seiten abgeglichen. Merk dir, was dir gefällt; maßgeblich bleibt die Seite des Anbieters."}</p>
       {items.length > 0 && <ListSummary items={items} total={data.state === "ready" ? data.total : items.length} soonOnly={data.soonOnly} />}</div>
     <Form key={JSON.stringify([data.search, data.subject])} className="filters" method="get" role="search">
@@ -62,6 +65,6 @@ export default function Scholarships() {
       : <CardList items={items} result={answers.result} level={level} filterLevel={data.degree} soonOnly={data.soonOnly} byAmount={data.byAmount} save={{ studentAccounts: data.studentAccounts, signedIn: data.signedIn, savedIds: data.savedIds }}
         institution={answers.facts.institution || null} subject={answers.facts.subject || null} abroad={answers.facts.abroad || null} grouped={!data.search && !data.family}
         pages={{ page: data.page, href: page => browsePageHref(data, page) }} />}
-    {items.length > 0 && <p className="quiet-line">{lastChecked ? `Zuletzt geprüft am ${dateLong(lastChecked)}. ` : ""}Nur Angaben von den offiziellen Seiten der Anbieter.</p>}
+    {items.length > 0 && <p className="quiet-line">{lastChecked ? `Zuletzt geprüft am ${dateLong(lastChecked)}. ` : ""}Nur Angaben von den offiziellen Seiten der Anbieter.{answers.result ? " Regelbasierter Abgleich, keine Entscheidung über deine Berechtigung." : ""}</p>}
   </main>;
 }

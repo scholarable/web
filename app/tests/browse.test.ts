@@ -18,8 +18,8 @@ test("bounded pagination preserves filters and drops unrelated parameters", () =
   const soon = browseFilters(new URL("https://example.test/?status=soon&sort=amount&degree=master&page=3"));
   assert.deepEqual([soon.openOnly, soon.soonOnly, soon.byAmount], [false, true, true]);
   assert.equal(browsePageHref(soon, 1), "/scholarships?degree=master&status=soon&sort=amount&page=1");
-  assert.equal(browseHref("/", soon, { openOnly: true, soonOnly: false }, "#list"), "/?degree=master&status=open&sort=amount#list");
-  assert.equal(browseHref("/", soon, { degree: "", byAmount: false }), "/?status=soon");
+  assert.equal(browseHref("/scholarships", soon, { openOnly: true, soonOnly: false }), "/scholarships?degree=master&status=open&sort=amount");
+  assert.equal(browseHref("/scholarships", soon, { degree: "", byAmount: false }), "/scholarships?status=soon");
   assert.equal(browseFilters(new URL("https://example.test/?status=later&sort=random")).soonOnly, false);
   for (const page of ["NaN", "Infinity", "-1", "1.5", "1001"]) assert.equal(browseFilters(new URL(`https://example.test/?page=${page}`)).page, 0);
 });

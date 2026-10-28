@@ -84,7 +84,7 @@ test("Nein: a call only for applicants from abroad folds away under its own labe
   assert.doesNotMatch(none, /mismatch-group/);
 
   const answers = { facts: { degree_level: "master", abroad: "no" }, adult: "yes", asked: [], chat: [], proposal: null, result: result(items), loading: false, error: null } as AnswersState;
-  assert.equal(resultSummary(items, answers), "4 Stipendien nennen Master ausdrücklich, sie stehen jetzt oben. Ganz unten eingeklappt: 1 nur für Bewerbungen aus dem Ausland.");
+  assert.equal(resultSummary(items, answers), "4 Stipendien nennen Master ausdrücklich, sie stehen in deiner Liste oben. Ganz unten eingeklappt: 1 nur für Bewerbungen aus dem Ausland.");
 });
 
 const options = { state: "ready" as const, institution: [], subject: [], usesStudyPlan: false };

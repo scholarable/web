@@ -89,6 +89,6 @@ test("the chat says when typed text goes to the AI", () => {
     options: { state: "ready", institution: [], subject: [], usesStudyPlan: false }, items: [], studentAccounts: false, cvImport: false, chatAi,
     initialFacts: {}, adultConfirmed: false, manualEntry: false }) }]) }));
   assert.match(render(true), /liest eine KI bei Cloudflare/);
-  assert.doesNotMatch(render(false), /KI/);
-  assert.match(render(false), /Bitte keine Namen oder Kontaktdaten/);
+  // Without the AI there is no note under the box (owner, 2026-10-28).
+  assert.doesNotMatch(render(false), /KI|Bitte keine Namen|goal-privacy/);
 });

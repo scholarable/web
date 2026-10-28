@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { demoMode, publicDemoMode } from "../lib/demo-mode";
 import type { DiscoveryFacts } from "../lib/discovery";
 import { interpretAge, interpretGoal, mergeDiscoveryFacts } from "../lib/discovery";
@@ -11,7 +12,7 @@ import { levelName } from "../lib/copy-de";
 import { NOT_LISTED, universityChoices, universityFit, type SubjectInfo } from "../lib/study-fit";
 import { arrangeList, families, familyTitle, ownCall } from "./scholarship-list";
 import { CvOnboarding, type ConfirmedCvImport } from "./cv-onboarding";
-import { DownIcon, EditIcon, LogoMark, SendIcon } from "./icons";
+import { EditIcon, LogoMark, NextIcon, SendIcon } from "./icons";
 import { HeroFigures, HeroFiguresRow } from "./hero-figures";
 
 // subjectInfo: a taxonomy subject's German name and Fächergruppe (profileOptions);
@@ -92,7 +93,7 @@ export function subjectOptions(options: Pick<Options, "subject" | "subjectInfo">
 // "a, b und c"
 const listDe = (parts: string[]) => parts.length > 1 ? `${parts.slice(0, -1).join(", ")} und ${parts.at(-1)}` : parts[0] || "";
 
-// What the list now shows, in words: counts only, from the published rules,
+// What the student's list shows, in words: counts only, from the published rules,
 // over every listed call, counted the way the list shows them (a family's
 // grouped card once).
 export function resultSummary(items: ScholarshipListItem[], answers: AnswersState): string {
@@ -107,7 +108,7 @@ export function resultSummary(items: ScholarshipListItem[], answers: AnswersStat
     list.conflicts.length ? `${list.conflicts.length} ${list.conflicts.length === 1 ? "passt" : "passen"} laut Regeln nicht` : "",
   ].filter(Boolean);
   return [
-    named ? `${named} ${named === 1 ? "Stipendium nennt" : "Stipendien nennen"} ${level} ausdrücklich, ${named === 1 ? "es steht" : "sie stehen"} jetzt oben.`
+    named ? `${named} ${named === 1 ? "Stipendium nennt" : "Stipendien nennen"} ${level} ausdrücklich, ${named === 1 ? "es steht" : "sie stehen"} in deiner Liste oben.`
       : `Kein Stipendium nennt ${level} so, dass ich es prüfen kann.`,
     rest ? `Bei ${rest} steht kein Studienniveau, ${rest === 1 ? "es kommt" : "sie kommen"} danach.` : "",
     folded.length ? `Ganz unten eingeklappt: ${listDe(folded)}.` : "",
@@ -150,6 +151,7 @@ export function DiscoveryChat({ options, items, total = items.length, studentAcc
   initialFacts: DiscoveryFacts; adultConfirmed: boolean; manualEntry: boolean;
 }) {
   const answers = useAnswers();
+  const navigate = useNavigate();
   const [ready, setReady] = useState(false);
   const [text, setText] = useState("");
   const [logOpen, setLogOpen] = useState(false);
@@ -180,19 +182,20 @@ export function DiscoveryChat({ options, items, total = items.length, studentAcc
 
   function begin() { if (startedAt.current === null) startedAt.current = Date.now(); }
   async function match(after: DiscoveryFacts) {
-    if (!readyToMatch({ facts: after, adult: getAnswers().adult })) return;
+    if (!readyToMatch({ facts: after, adult: getAnswers().adult })) return false;
     const result = await runMatch();
-    if (!result) return;
+    if (!result) return false;
     if (!reached.current) { reached.current = true; recordDiscoveryEvent("first_result", startedAt.current === null ? 0 : Date.now() - startedAt.current); }
     const summary = resultSummary(items, getAnswers());
     if (summary) say({ who: "bot", text: summary });
     askNext();
+    return true;
   }
   function askNext() {
     const snapshot = getAnswers();
     const question = nextQuestion(options, snapshot);
     if (question) say({ who: "bot", text: question.text });
-    else if (snapshot.adult === "yes") say({ who: "bot", text: "Fertig! Was laut den geprüften Regeln zu dir passt, steht in der Liste ganz oben. Den Rest prüfst du auf der Stipendienseite, dort zeige ich dir genau, was." });
+    else if (snapshot.adult === "yes") say({ who: "bot", text: "Fertig! Was laut den geprüften Regeln zu dir passt, steht in deiner Liste ganz oben. Den Rest prüfst du auf der Stipendienseite, dort zeige ich dir genau, was." });
   }
   function track(field: AnswerField, value: string) {
     if (field === "adult") return;
@@ -299,12 +302,11 @@ export function DiscoveryChat({ options, items, total = items.length, studentAcc
     .filter(field => field === "adult" ? answers.adult : answers.facts[field as keyof DiscoveryFacts]);
   const composer = (big: boolean, placeholder: string) => <form className={`composer${big ? " big" : ""}`} method="post" action="/match" onSubmit={read} autoComplete="off">
     <label htmlFor="scholarship-goal" className="sr-only">Nachricht an Scholarable</label>
-    <input id="scholarship-goal" value={text} onChange={event => setText(event.target.value)} maxLength={1000} placeholder={placeholder} aria-describedby="goal-privacy" />
+    <input id="scholarship-goal" value={text} onChange={event => setText(event.target.value)} maxLength={1000} placeholder={placeholder} aria-describedby={chatAi ? "goal-privacy" : undefined} />
     <button className="send" aria-label="Senden" disabled={!ready || !text.trim() || thinking}><SendIcon /></button>
   </form>;
-  const privacy = <p className="fine" id="goal-privacy">{chatAi
-    ? "Was du tippst, liest eine KI bei Cloudflare, nur um deine Antworten zu erkennen; gespeichert wird nichts. Bitte keine Namen oder Kontaktdaten. Deine Antworten bleiben nur in diesem Tab und sind nach spätestens 24 Stunden weg."
-    : "Bitte keine Namen oder Kontaktdaten. Deine Antworten bleiben nur in diesem Tab und sind nach spätestens 24 Stunden weg."}</p>;
+  // No note under the box (owner, 2026-10-28), except that typed text goes to an AI when that is on.
+  const privacy = chatAi && <p className="fine" id="goal-privacy">Was du tippst, liest eine KI bei Cloudflare, nur um deine Antworten zu erkennen; gespeichert wird nichts. Bitte keine Namen oder Kontaktdaten.</p>;
   const chips = (list: [string, string][], field: AnswerField) => <div className="chips">{list.map(([value, label]) =>
     <button key={label} type="button" className="chip" disabled={!ready} onClick={() => choose(field, value, label)}>{label}</button>)}</div>;
   // Many universities or subjects are a list to pick from, not eight taps;
@@ -327,7 +329,12 @@ export function DiscoveryChat({ options, items, total = items.length, studentAcc
     {showCv && <div className="cv-panel"><CvOnboarding options={options} onApply={useCv} /></div>}
   </>;
 
-  if (manualEntry) return <ShortForm options={options} ready={ready} onDone={facts => { begin(); setAnswers({ facts: facts.facts, adult: facts.adult, asked: ["degree_level", "adult", "abroad", "subject", "institution", "semester_number", "future_plan"] }); void match(facts.facts); }} />;
+  if (manualEntry) return <ShortForm options={options} ready={ready} onDone={facts => { begin(); setAnswers({ facts: facts.facts, adult: facts.adult, asked: ["degree_level", "adult", "abroad", "subject", "institution", "semester_number", "future_plan"] });
+    void match(facts.facts).then(found => { if (found) navigate("/scholarships"); }); }} />;
+
+  // The answers reach the list through this tab's memory, so it is a link inside the app, never a page load.
+  const toList = (done: boolean) => <Link className={`btn ${done ? "hero-solid" : "hero-line sm"} to-list`} to="/scholarships">
+    {done ? "Meine Stipendien ansehen" : "Schon jetzt zur Liste"} <NextIcon /></Link>;
 
   if (!started) return <section className="hero start" aria-labelledby="hero-h"><HeroFigures /><div className="hero-in">
     <h1 id="hero-h">Finde dein <em>Stipendium.</em></h1>
@@ -336,13 +343,13 @@ export function DiscoveryChat({ options, items, total = items.length, studentAcc
     {chips(questions(options, answers)[0].chips, "degree_level")}
     {privacy}
     {sample}{cv}
-    <noscript><p className="fine">Für den Chat brauchst du JavaScript. Die Liste unten funktioniert auch ohne.</p></noscript>
-    <a className="jump" href="#list">{total ? `Alle ${total} ansehen` : "Zur Liste"} <DownIcon /></a>
+    <noscript><p className="fine">Für den Chat brauchst du JavaScript. Die Liste aller Stipendien funktioniert auch ohne.</p></noscript>
+    <Link className="jump" to="/scholarships">{total ? `Alle ${total} ansehen` : "Zur Liste"} <NextIcon /></Link>
     <HeroFiguresRow />
   </div></section>;
 
   const shown = logOpen ? answers.chat : answers.chat.slice(-3);
-  return <section className="hero thread-mode" aria-label="Chat mit Scholarable"><div className="hero-in">
+  return <section className="hero start thread-mode" aria-label="Chat mit Scholarable"><HeroFigures /><div className="hero-in">
     <h1 className="sr-only">Stipendien finden</h1>
     {given.length > 0 && <div className="answers" aria-label="Deine Angaben">{given.map(field => {
       const value = field === "adult" ? answers.adult! : answers.facts[field as keyof DiscoveryFacts]!;
@@ -362,11 +369,14 @@ export function DiscoveryChat({ options, items, total = items.length, studentAcc
     </div>
     {answers.proposal ? <div className="chips"><button type="button" className="chip" onClick={() => confirm(true)}>Ja, stimmt</button><button type="button" className="chip" onClick={() => confirm(false)}>Nein, ändern</button></div>
       : question && answerField(question)}
+    {answers.result && !answers.proposal && !question && toList(true)}
     {composer(false, question ? "Oder schreib hier …" : "Noch was ändern?")}
     {privacy}
     {cv}
+    {answers.result && (question || answers.proposal) && toList(false)}
     {studentAccounts && answers.result && <div className="chat-save"><button type="button" className="btn hero-line sm" onClick={saveContext}>Angaben in meinem Konto speichern</button>
       {saveError && <p className="form-error" role="alert">{saveError}</p>}</div>}
+    <HeroFiguresRow />
   </div></section>;
 }
 

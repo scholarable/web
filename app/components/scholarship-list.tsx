@@ -286,8 +286,8 @@ export function ListSummary({ items, total, soonOnly = false }: { items: Scholar
 
 // Filters as links, so they work before the page's script loads: status,
 // then study level (tap again to clear), then the order.
-export function ListTools({ path, filters, hash = "" }: { path: string; filters: BrowseFilters; hash?: string }) {
-  const to = (change: Partial<BrowseFilters>) => browseHref(path, filters, change, hash);
+export function ListTools({ path, filters }: { path: string; filters: BrowseFilters }) {
+  const to = (change: Partial<BrowseFilters>) => browseHref(path, filters, change);
   const status = filters.openOnly ? "open" : filters.soonOnly ? "soon" : "";
   const current = (on: boolean) => on ? "true" as const : undefined;
   return <div className="list-tools">
@@ -315,8 +315,7 @@ function Group({ id, title, hint, items, heading: H, card, count = items.length 
 }
 
 // Pages of the arranged list: page is 0-based, href leads to another page.
-// The start page shows the first page and links on ("Weitere Stipendien").
-export type ListPages = { page: number; href: (page: number) => string; startPage?: boolean };
+export type ListPages = { page: number; href: (page: number) => string };
 export function CardList({ items, result, level, filterLevel = "", soonOnly = false, byAmount: amount = false, heading = "h2", save, institution = null, subject = null, abroad = null, grouped = true, pages }: {
   items: ScholarshipListItem[]; result: MatchResult | null; level: string | null; filterLevel?: string; soonOnly?: boolean; byAmount?: boolean; heading?: Heading; save: SaveContext;
   // The chat's university, subject and "aus dem Ausland" answers, and whether declared families are shown as one card.
@@ -353,12 +352,10 @@ export function CardList({ items, result, level, filterLevel = "", soonOnly = fa
       hint={perGroup ? "nicht angegeben oder je nach Gruppe" : "Seite prüfen"} items={on("unstated")} count={total("unstated")} heading={heading} card={card} />}
     {last && folds.map(([key, text, list]) => list.length > 0 && <details key={key} className="mismatch-group"><summary>{`${text} (${list.length})`}</summary>
       <ul className="cards">{list.map(card)}</ul></details>)}
-    {pages && count > 1 && (pages.startPage
-      ? page === 0 && <nav className="pages" aria-label="Seiten"><Link rel="next" to={pages.href(1)}>Weitere Stipendien</Link></nav>
-      : <nav className="pages" aria-label="Seiten">
-        {page > 0 && <Link rel="prev" to={pages.href(page - 1)}>Vorherige Seite</Link>}
-        <span>{`Seite ${page + 1} von ${count}`}</span>
-        {page < count - 1 && <Link rel="next" to={pages.href(page + 1)}>Nächste Seite</Link>}
-      </nav>)}
+    {pages && count > 1 && <nav className="pages" aria-label="Seiten">
+      {page > 0 && <Link rel="prev" to={pages.href(page - 1)}>Vorherige Seite</Link>}
+      <span>{`Seite ${page + 1} von ${count}`}</span>
+      {page < count - 1 && <Link rel="next" to={pages.href(page + 1)}>Nächste Seite</Link>}
+    </nav>}
   </div>;
 }
