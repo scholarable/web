@@ -15,7 +15,7 @@ import type { ScholarshipListItem } from "../lib/serving.server";
 
 const today = "2026-10-20";
 function item(id: string, levelRuleIds: string[], overrides: Partial<Parameters<typeof cardFacts>[0]> = {}, extra: Partial<ScholarshipListItem> = {}): ScholarshipListItem {
-  return { id, slug: `call-${id}`, title: `Synthetic call ${id}`, provider: `Synthetic provider ${id}`, funding: "", deadline: "", audience: "", status: "open", lastChecked: null, applyNow: true, family: null, institutions: [], subjects: [], ...extra,
+  return { id, slug: `call-${id}`, title: `Synthetic call ${id}`, provider: `Synthetic provider ${id}`, funding: "", deadline: "", audience: "", status: "open", lastChecked: null, applyNow: true, family: null, institutions: [], subjects: [], origins: [], ...extra,
     card: cardFacts({ funding: [
       { id: "stipend", track_id: null, condition_group_id: null, component_type: "living_stipend", amount_kind: "up_to", amount_min_minor: null, amount_max_minor: 85500,
         currency: "EUR", percentage: null, frequency: "monthly", duration_min_months: null, duration_max_months: null, starts_on: null, ends_on: null, is_conditional: true,

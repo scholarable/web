@@ -32,8 +32,8 @@ test("query searches reviewed provider names, loads every match up to the capaci
   assert.match(query.text, /provider_name/);
   // Every listed call says which declared family it belongs to, and names the
   // universities and taxonomy subjects it is only for; the family filter is a parameter.
-  assert.match(query.text, /f\.family, coalesce\(nu\.names, f\.institutions, '\[\]'::jsonb\) as institutions, coalesce\(ns\.tags, '\[\]'::jsonb\) as taxonomy_tags,/);
-  assert.match(query.text, /left join families f on f\.call_id = r\.id\s+left join named_universities nu on nu\.call_id = r\.id\s+left join named_subjects ns on ns\.call_id = r\.id\s+where \(\$5 = '' or f\.family = \$5\)/);
+  assert.match(query.text, /f\.family, coalesce\(nu\.names, f\.institutions, '\[\]'::jsonb\) as institutions, coalesce\(ns\.tags, '\[\]'::jsonb\) as taxonomy_tags,\s+coalesce\(od\.declared, '\[\]'::jsonb\) as origins,/);
+  assert.match(query.text, /left join families f on f\.call_id = r\.id\s+left join named_universities nu on nu\.call_id = r\.id\s+left join named_subjects ns on ns\.call_id = r\.id\s+left join declared_origins od on od\.call_id = r\.id\s+where \(\$5 = '' or f\.family = \$5\)/);
   assert.match(query.text, /named_universities as \(select call_id, jsonb_agg\(name order by name\) as names from universities group by call_id\)/);
   // Every match up to the capacity, plus one row to notice more: the page sorts and groups the whole list before paging it.
   assert.deepEqual(query.values, [filters.search, 1001, "master", "engineering", ""]);
@@ -53,7 +53,7 @@ test("each serving view is read once per list or matching query, into a material
   // Joined or correlated directly, the planner re-ran a view for every listed call:
   // 9.3 s for the list and 9.1 s for the matching calls at 56 calls (2026-10-27).
   const views = ["recommendation_ready_calls", "apply_now_calls", "public_call_details", "public_call_families",
-    "matching_ready_calls", "public_call_subjects", "public_call_institutions"];
+    "matching_ready_calls", "public_call_subjects", "public_call_institutions", "public_call_origins"];
   const filters = browseFilters(new URL("https://example.test/?degree=master&subject=computer-science&family=x"));
   for (const text of [browseQuery(filters).text, browseQuery({ ...filters, openOnly: true }).text, MATCHING_CALLS_QUERY]) {
     for (const view of views) {

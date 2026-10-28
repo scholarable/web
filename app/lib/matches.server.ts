@@ -45,7 +45,8 @@ export function parseProfile(input: unknown): MatchRequest["profile"] {
 
 // family: the declared scholarship family of the call (public_call_families), if any.
 // institutions and subjects: its universities and taxonomy subjects (SCOPE_COLUMNS).
-type CatalogueRow = { id: string; title: string; slug: string; matching_payload: ServingPayload; details?: unknown; family?: unknown; institutions?: unknown; taxonomy_tags?: unknown };
+// origins: the reviewed declarations of whom it is for by where the applicant lives.
+type CatalogueRow = { id: string; title: string; slug: string; matching_payload: ServingPayload; details?: unknown; family?: unknown; institutions?: unknown; taxonomy_tags?: unknown; origins?: unknown };
 const texts = (value: unknown): string[] => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && !!item.trim() && item.length <= 160) : [];
 const tags = (value: unknown): SubjectTag[] => Array.isArray(value) ? value.filter((tag): tag is SubjectTag => !!tag && typeof tag === "object"
   && typeof tag.code === "string" && /^[a-z][a-z0-9_-]{0,79}$/.test(tag.code) && typeof tag.name === "string" && !!tag.name.trim() && tag.name.length <= 160
@@ -53,7 +54,9 @@ const tags = (value: unknown): SubjectTag[] => Array.isArray(value) ? value.filt
 // The answers the chat offers: every specific university of a listed call
 // (study-fit.ts: a university's own calls and the Deutschlandstipendium's
 // universities, under their German names), each taxonomy subject a listed call
-// names with its Fächergruppe, and any value a stored rule names.
+// names with its Fächergruppe, and any value a stored rule names. askAbroad:
+// whether "Lebst du gerade im Ausland …?" can change the list, which needs a
+// listed call declared only for applicants from abroad.
 export function profileOptions(rows: CatalogueRow[]) {
   const options = { institution: new Set<string>(), subject: new Set<string>() };
   const subjectInfo: SubjectInfo = {};
@@ -76,7 +79,8 @@ export function profileOptions(rows: CatalogueRow[]) {
   const universities = universityChoices(rows.map(row => ({ provider: provider(row), family: typeof row.family === "string" && row.family ? row.family : null, institutions: texts(row.institutions) })));
   for (const name of universities) options.institution.add(name);
   for (const code of Object.keys(subjectInfo)) options.subject.add(code);
-  return { institution: [...options.institution].sort((a, b) => a.localeCompare(b, "de")), subject: [...options.subject].sort(), subjectInfo };
+  const askAbroad = rows.some(row => Array.isArray(row.origins) && row.origins.some(origin => origin && typeof origin === "object" && origin.origin === "from_abroad"));
+  return { institution: [...options.institution].sort((a, b) => a.localeCompare(b, "de")), subject: [...options.subject].sort(), subjectInfo, askAbroad };
 }
 const studyPlans = ["exchange", "internship", "thesis", "graduation"];
 const followUpLabels: Record<string, string> = {
@@ -139,7 +143,7 @@ export async function loadProfileOptions(env: ServingEnv | undefined) {
     const rows = await readMatchingCalls(env);
     if (rows.length > MATCHING_CAPACITY) throw new Error("Catalogue limit");
     return { state: "ready" as const, ...profileOptions(rows), usesStudyPlan: usesStudyPlan(rows) };
-  } catch { return { state: "unavailable" as const, usesStudyPlan: false, institution: [] as string[], subject: [] as string[], subjectInfo: {} as SubjectInfo }; }
+  } catch { return { state: "unavailable" as const, usesStudyPlan: false, institution: [] as string[], subject: [] as string[], subjectInfo: {} as SubjectInfo, askAbroad: false }; }
 }
 // The largest catalogue matching accepts; one more row than this fails closed
 // (503), never silently truncated. Capacity test 2026-10-28: the 189 live calls

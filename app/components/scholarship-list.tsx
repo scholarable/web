@@ -6,7 +6,7 @@ import type { MatchResult } from "../lib/contracts";
 import { browseFilters, browseHref, PAGE_SIZE, type BrowseFilters } from "../lib/browse";
 import { dateLong, daysWord, levelName, periodShort, scopesShort } from "../lib/copy-de";
 import { providerDisplayName } from "../lib/provider-names";
-import { NOT_LISTED, sameUniversity, subjectFit, subjectGroups, universityChoices, universityFit, type ScopeFit } from "../lib/study-fit";
+import { NOT_LISTED, originFit, sameUniversity, subjectFit, subjectGroups, universityChoices, universityFit, type OriginTag, type ScopeFit } from "../lib/study-fit";
 import { SaveButton } from "./save-button";
 import { CheckIcon } from "./icons";
 
@@ -53,10 +53,10 @@ function fitWords(fit: CallFit, level: string): { tone: "ok" | "no" | ""; text: 
   return { tone: "", text: "Nicht angegeben", sub: "Studienniveau, Seite prüfen" };
 }
 
-// The university and subject answers against a call that is only for some
-// (study-fit.ts); null without an answer or for a call open to all.
-export type Scope = { university: ScopeFit | null; subject: ScopeFit | null };
-const noScope: Scope = { university: null, subject: null };
+// The university, subject and "aus dem Ausland" answers against a call that is
+// only for some (study-fit.ts); null without an answer or for a call open to all.
+export type Scope = { university: ScopeFit | null; subject: ScopeFit | null; origin: ScopeFit | null };
+const noScope: Scope = { university: null, subject: null, origin: null };
 // Up to three names, then how many more ("+2"); the scholarship page lists all.
 const someNames = (names: string[]) => `${names.slice(0, 3).join(", ")}${names.length > 3 ? ` +${names.length - 3}` : ""}`;
 // "For whom" beyond the study level: the universities and subjects a call is
@@ -76,15 +76,26 @@ export function scopeTags(item: ScholarshipListItem, scope: Scope): { text: stri
       tags.push({ text: `Nur an: ${someNames(item.institutions.map(providerDisplayName))}`, tone: "quiet" });
     }
   } else tags.push(...scopesShort("unknown", institutions).map(text => ({ text, tone: "quiet" as const })));
+  tags.push(...originTagsDe(item.origins, scope));
   return tags;
+}
+// Whom the call is for by where the applicant lives, when every declared row
+// agrees: only applicants from abroad, or the groups an in_germany call names.
+function originTagsDe(origins: OriginTag[], scope: Scope): { text: string; tone: "on" | "quiet" | "fit" }[] {
+  if (!origins.length) return [];
+  if (origins.every(row => row.origin === "from_abroad")) return [{ text: "Nur für Bewerbungen aus dem Ausland", tone: scope.origin === "own" ? "on" : "quiet" }];
+  if (!origins.every(row => row.origin === "in_germany")) return [];
+  const groups = [...new Set(origins.map(row => row.groups).filter((value): value is string => !!value))];
+  return [...(scope.origin === "check" ? [{ text: "Selbst prüfen", tone: "fit" as const }] : []),
+    ...(groups.length ? [{ text: `Nur für: ${groups.join(" · ")}`, tone: "quiet" as const }] : [])];
 }
 
 export function ScholarshipCard({ item, fit, level, filterLevel = "", save, title: Title = "h3", scope = noScope }: { item: ScholarshipListItem; fit: CallFit | null; level: string | null; filterLevel?: string; save: SaveContext; title?: "h3" | "h4"; scope?: Scope }) {
   const { money } = item.card;
   const pill = statusPill(item);
   const fitLine = fit && level ? fitWords(fit, level) : null;
-  // "Passt zu dir" only when the call is not limited to universities or subjects the answers leave open.
-  const fits = !!fit && !!level && fit.level === "ok" && !fit.conflict && ![scope.university, scope.subject].some(value => value === "check" || value === "other");
+  // "Passt zu dir" only when the call is not limited to universities, subjects or applicants the answers leave open.
+  const fits = !!fit && !!level && fit.level === "ok" && !fit.conflict && ![scope.university, scope.subject, scope.origin].some(value => value === "check" || value === "other");
   const tags = scopeTags(item, scope);
   const unit = "text" in money.head ? "" : periodShort[money.head.unit] || money.head.unit;
   const more = [money.note, money.plus].filter(Boolean).join(" · ");
@@ -168,11 +179,12 @@ export type FamilyEntry = { kind: "family"; family: string; members: Scholarship
 export type ListEntry = { kind: "call"; item: ScholarshipListItem } | FamilyEntry;
 const sortItem = (entry: ListEntry) => entry.kind === "call" ? entry.item : entry.lead;
 // Where a card goes: the list (level named, or not stated), or folded away
-// below: another university's, another subject's, or a clear rule conflict.
-type Place = "shown" | "unstated" | "university" | "subject" | "conflicts";
-export type ListAnswers = { filterLevel?: string; amount?: boolean; institution?: string | null; subject?: string | null; grouped?: boolean };
+// below: another university's, another subject's, only for applicants from
+// abroad, or a clear rule conflict.
+type Place = "shown" | "unstated" | "university" | "subject" | "origin" | "conflicts";
+export type ListAnswers = { filterLevel?: string; amount?: boolean; institution?: string | null; subject?: string | null; abroad?: string | null; grouped?: boolean };
 // The whole list arranged for the chat's answers, before it is paged.
-export function arrangeList(items: ScholarshipListItem[], result: MatchResult | null, { filterLevel = "", amount = false, institution = null, subject = null, grouped = true }: ListAnswers = {}) {
+export function arrangeList(items: ScholarshipListItem[], result: MatchResult | null, { filterLevel = "", amount = false, institution = null, subject = null, abroad = null, grouped = true }: ListAnswers = {}) {
   const sorted = sortForStudent(items, result, filterLevel, amount);
   const conflicting = new Set(sorted.conflicts.map(item => item.id)), named = new Set(sorted.shown.map(item => item.id));
   // The universities the site can name for sure, from every listed call (study-fit.ts).
@@ -181,10 +193,11 @@ export function arrangeList(items: ScholarshipListItem[], result: MatchResult | 
   const scopes = new Map<string, Scope>(items.map(item => [item.id, {
     university: universityFit({ ...item, scope: item.card.study.institutions }, institution, known),
     subject: subjectFit(item.card.study.subjects, item.subjects, subject, groups),
+    origin: originFit(item.origins, abroad),
   }]));
   const placeOf = (item: ScholarshipListItem): Place => {
     const scope = scopes.get(item.id)!;
-    return scope.university === "other" ? "university" : scope.subject === "other" ? "subject"
+    return scope.university === "other" ? "university" : scope.subject === "other" ? "subject" : scope.origin === "other" ? "origin"
       : conflicting.has(item.id) ? "conflicts" : named.has(item.id) ? "shown" : "unstated";
   };
   const hidden = new Set<string>();
@@ -211,7 +224,7 @@ export function arrangeList(items: ScholarshipListItem[], result: MatchResult | 
     ...cards.filter(card => card.place === place).map(({ place: _place, ...card }) => card),
   ].sort((a, b) => (amount ? byAmount : byDeadline)(sortItem(a), sortItem(b)));
   return { fits: sorted.fits, scopes, shown: part("shown"), unstated: part("unstated"),
-    otherUniversity: part("university"), otherSubject: part("subject"), conflicts: part("conflicts") };
+    otherUniversity: part("university"), otherSubject: part("subject"), otherOrigin: part("origin"), conflicts: part("conflicts") };
 }
 
 // The grouped card: the family's name, how many universities, the best
@@ -304,13 +317,13 @@ function Group({ id, title, hint, items, heading: H, card, count = items.length 
 // Pages of the arranged list: page is 0-based, href leads to another page.
 // The start page shows the first page and links on ("Weitere Stipendien").
 export type ListPages = { page: number; href: (page: number) => string; startPage?: boolean };
-export function CardList({ items, result, level, filterLevel = "", soonOnly = false, byAmount: amount = false, heading = "h2", save, institution = null, subject = null, grouped = true, pages }: {
+export function CardList({ items, result, level, filterLevel = "", soonOnly = false, byAmount: amount = false, heading = "h2", save, institution = null, subject = null, abroad = null, grouped = true, pages }: {
   items: ScholarshipListItem[]; result: MatchResult | null; level: string | null; filterLevel?: string; soonOnly?: boolean; byAmount?: boolean; heading?: Heading; save: SaveContext;
-  // The chat's university and subject answers, and whether declared families are shown as one card.
-  institution?: string | null; subject?: string | null; grouped?: boolean; pages?: ListPages;
+  // The chat's university, subject and "aus dem Ausland" answers, and whether declared families are shown as one card.
+  institution?: string | null; subject?: string | null; abroad?: string | null; grouped?: boolean; pages?: ListPages;
 }) {
   const visible = soonOnly ? items.filter(item => statusGroup(item) === "soon") : items;
-  const { fits, scopes, shown, unstated, otherUniversity, otherSubject, conflicts } = arrangeList(visible, result, { filterLevel, amount, institution, subject, grouped });
+  const { fits, scopes, shown, unstated, otherUniversity, otherSubject, otherOrigin, conflicts } = arrangeList(visible, result, { filterLevel, amount, institution, subject, abroad, grouped });
   const title = heading === "h2" ? "h3" : "h4";
   const card = (entry: ListEntry) => entry.kind === "family"
     ? <FamilyCard key={`family-${entry.family}`} entry={entry} fits={fits} level={level} filterLevel={filterLevel} title={title} />
@@ -330,7 +343,7 @@ export function CardList({ items, result, level, filterLevel = "", soonOnly = fa
   // Calls the chat could not place by level read "selbst prüfen" when some state levels per group.
   const perGroup = unstated.some(entry => entry.kind === "call" && fits.get(entry.item.id)?.level === "un");
   const folds: [string, string, ListEntry[]][] = [["university", "Nur für Studierende anderer Hochschulen", otherUniversity], ["subject", "Nur für andere Fächer", otherSubject],
-    ["conflicts", "Passt laut Regeln nicht zu deinen Angaben", conflicts]];
+    ["origin", "Nur für Bewerbungen aus dem Ausland", otherOrigin], ["conflicts", "Passt laut Regeln nicht zu deinen Angaben", conflicts]];
   return <div className="groups">
     {GROUPS.map(group => {
       const part = on(group.key);

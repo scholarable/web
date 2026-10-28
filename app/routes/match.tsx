@@ -69,7 +69,7 @@ export function ScholarshipDiscovery() {
           <ListTools path={pathname} filters={list} hash="#list" />
           {items.length === 0 ? <div className="notice"><h3>Keine Stipendien gefunden</h3><p>Versuch eine andere Auswahl oder schau später wieder vorbei.</p></div>
             : <CardList items={items} result={answers.result} level={level} filterLevel={list.degree} soonOnly={list.soonOnly} byAmount={list.byAmount} heading="h3" save={save}
-              institution={answers.facts.institution || null} subject={answers.facts.subject || null} grouped={!list.search && !list.family}
+              institution={answers.facts.institution || null} subject={answers.facts.subject || null} abroad={answers.facts.abroad || null} grouped={!list.search && !list.family}
               pages={{ page: 0, href: page => browsePageHref(list, page), startPage: true }} />}
           <p className="quiet-line">{lastChecked ? `Zuletzt geprüft am ${dateLong(lastChecked)}. ` : ""}Nur Angaben von den offiziellen Seiten der Anbieter. Regelbasierter Abgleich, keine Entscheidung über deine Berechtigung.</p>
         </>}

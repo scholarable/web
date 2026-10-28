@@ -12,7 +12,7 @@ const card = cardFacts({ funding: [], tracks: [], windows: [], applicationStatus
   summaryMoney: { min: 30000, max: 30000, currency: "EUR", frequency: "monthly" }, levels: [], levelRuleIds: [], subjectScope: "all", institutionScope: "all" }, "2026-10-25");
 const render = (reviewOverdue: boolean) => renderToStaticMarkup(createElement(MemoryRouter, null, createElement(ScholarshipCard, {
   item: { id: "6", slug: "fnf", title: "Begabtenförderung", provider: "Friedrich-Naumann-Stiftung", funding: "", deadline: "", audience: "", status: "planned",
-    lastChecked: "2026-10-17T09:26:00Z", reviewOverdue, card, applyNow: false, family: null, institutions: [], subjects: [] },
+    lastChecked: "2026-10-17T09:26:00Z", reviewOverdue, card, applyNow: false, family: null, institutions: [], subjects: [], origins: [] },
   fit: null, level: null, save: { studentAccounts: false, signedIn: false, savedIds: [] } })));
 
 test("a call whose scheduled re-check is overdue stays listed with a note", () => {

@@ -8,7 +8,7 @@ import { audienceText, moneyText, timingText } from "./catalogue-copy";
 import { cardFacts, type CardFacts } from "./cards";
 import { callDisplayTitle, providerDisplayName } from "./provider-names";
 import { todayInBerlin } from "./deadline-watch";
-import type { SubjectTag } from "./study-fit";
+import type { OriginTag, SubjectTag } from "./study-fit";
 
 export type ServingEnv = { SCHOLARABLE_SERVING_DATABASE_URL?: string };
 export async function servingQuery(env: ServingEnv | undefined) {
@@ -22,13 +22,21 @@ export async function servingQuery(env: ServingEnv | undefined) {
 // declared scholarship family the call belongs to (public_call_families), shown
 // once in the list. institutions and subjects: the verified universities
 // (public_call_institutions, or the family's) and taxonomy subjects
-// (public_call_subjects) of a call that is only for some.
-export type ScholarshipListItem = ScholarshipSummary & { card: CardFacts; applyNow: boolean; family: string | null; institutions: string[]; subjects: SubjectTag[] };
+// (public_call_subjects) of a call that is only for some. origins: the reviewed
+// declarations of whom it is for by where the applicant lives (public_call_origins).
+export type ScholarshipListItem = ScholarshipSummary & { card: CardFacts; applyNow: boolean; family: string | null; institutions: string[]; subjects: SubjectTag[]; origins: OriginTag[] };
 // scholarships holds every match (at most CATALOGUE_CAPACITY); total is their count.
 type BrowseResult = BrowseFilters & { subjects: SubjectChoice[]; today: string } & ({ state: "ready"; scholarships: ScholarshipListItem[]; total: number } | { state: "unavailable"; reason: string });
 
 const strings = (value: unknown): string[] => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0 && item.length <= 160) : [];
 const code = (value: unknown): value is string => typeof value === "string" && /^[a-z][a-z0-9_-]{0,79}$/.test(value);
+// The declared origins of a row ({track_id, origin, groups}); malformed entries are dropped.
+export function originTags(value: unknown): OriginTag[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap(row => !row || typeof row !== "object" || !["from_abroad", "in_germany", "both"].includes(row.origin)
+    || (row.track_id != null && !/^\d{1,20}$/.test(String(row.track_id))) ? [] : [{ track_id: row.track_id == null ? null : String(row.track_id), origin: row.origin,
+      groups: row.origin === "in_germany" && typeof row.groups === "string" && row.groups.trim() && row.groups.length <= 200 ? row.groups.trim() : null }]);
+}
 // The taxonomy subjects of a row ({code, name, group, group_name}); malformed entries are dropped.
 export function subjectTags(value: unknown): SubjectTag[] {
   if (!Array.isArray(value)) return [];
@@ -101,7 +109,7 @@ export async function browseServingCalls(url: URL, env: ServingEnv | undefined, 
     if (rows.length > CATALOGUE_CAPACITY) return { ...filters, subjects: [], today, state: "unavailable", reason: "Die Liste ist gerade größer, als diese Seite anzeigen kann. Bitte versuch es später noch einmal." };
     return { ...filters, subjects: subjectChoices(subjectRows), today, state: "ready", total: rows.length,
       scholarships: rows.map((row) => ({ ...summary(row as Record<string, unknown>), card: card(row as Record<string, unknown>, today), applyNow: row.apply_now === true,
-        family: typeof row.family === "string" && /^[a-z][a-z_]{1,39}$/.test(row.family) ? row.family : null, institutions: strings(row.institutions), subjects: subjectTags(row.taxonomy_tags) })) };
+        family: typeof row.family === "string" && /^[a-z][a-z_]{1,39}$/.test(row.family) ? row.family : null, institutions: strings(row.institutions), subjects: subjectTags(row.taxonomy_tags), origins: originTags(row.origins) })) };
   } catch {
     return { ...filters, subjects: [], today, state: "unavailable", reason: "Die Stipendien sind gerade nicht erreichbar. Bitte versuch es später noch einmal." };
   }

@@ -77,7 +77,7 @@ export function demoBrowse(filters: BrowseFilters, calls = demoCalls, today = "2
   // Each sample subject stands in as its own subject group.
   return { ...filters, today, subjects: [...new Set(calls.flatMap(row => mentionedValues(row.matching_payload, "subject")))].sort().slice(0, 100).map(value => ({ value, label: null })), state: "ready" as const,
     scholarships: rows.map(row => ({ ...row, card: demoCard(row, today), applyNow: row.status === "open", family: null,
-      subjects: row.subjects.map(code => ({ code, name: code.replaceAll("_", " "), group: null })) })), total: rows.length };
+      subjects: row.subjects.map(code => ({ code, name: code.replaceAll("_", " "), group: null })), origins: [] })), total: rows.length };
 }
 export function demoDetail(slug: string, today = "2026-10-20") {
   const scholarship = demoCalls.find(row => row.slug === slug);

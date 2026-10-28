@@ -26,7 +26,7 @@ test("catalogue choices preserve exact reviewed values and stale/unrecognised in
   const scoped = { ...row, matching_payload: { ...payload, requirements: [...payload.requirements!,
     { id: "subject", criterion_key: "subject", kind: "required", operator: "eq", value: { expected: "computer_science" }, label: "Subject" },
   ] } };
-  assert.deepEqual(profileOptions([scoped]), { institution: [], subject: ["computer_science"], subjectInfo: {} });
+  assert.deepEqual(profileOptions([scoped]), { institution: [], subject: ["computer_science"], subjectInfo: {}, askAbroad: false });
   // "Wo studierst du?" offers every specific university a listed call names
   // (public_call_institutions): a declared family's universities (the
   // Stiftung Studienfonds OWL's Bielefeld and Paderborn, not the foundation) and
@@ -47,7 +47,7 @@ test("catalogue choices preserve exact reviewed values and stale/unrecognised in
     { code: "mathematics-natural-sciences", name: "Mathematik, Naturwissenschaften", group: null, group_name: null }] };
   assert.deepEqual(profileOptions([taxonomy]), { institution: [], subject: ["computer-science", "engineering", "mathematics-natural-sciences"], subjectInfo: {
     "computer-science": { label: "Informatik", group: "engineering" }, engineering: { label: "Ingenieurwissenschaften", group: null },
-    "mathematics-natural-sciences": { label: "Mathematik, Naturwissenschaften", group: null } } });
+    "mathematics-natural-sciences": { label: "Mathematik, Naturwissenschaften", group: null } }, askAbroad: false });
   // A taxonomy answer reaches matching; one the catalogue does not hold stays unknown.
   const chosen = input(); chosen.profile.facts.subject.value = "computer-science"; chosen.profile.facts.institution.value = "Universität Hamburg";
   const rows = [taxonomy, hamburg].map(entry => ({ ...entry, matching_payload: { ...payload, id: entry.id } }));

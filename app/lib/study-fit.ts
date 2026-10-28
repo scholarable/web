@@ -88,3 +88,21 @@ export function subjectFit(scope: StudyScope, tags: SubjectTag[], answer: string
   if (tags.some(tag => tag.code === answer || (!!group && tag.code === group))) return "own";
   return group === null && tags.some(tag => tag.group === answer) ? "check" : "other";
 }
+
+// Whom a call (or each of its tracks) is for by where the applicant lives now,
+// from the reviewed declarations (public_call_origins): from_abroad only people
+// who live abroad now or arrived lately, in_germany only Germans, EU citizens,
+// Bildungsinländer:innen and the like (groups names them), both neither way.
+export type OriginTag = { track_id: string | null; origin: "from_abroad" | "in_germany" | "both"; groups: string | null };
+// The chat's "Lebst du gerade im Ausland und willst zum Studium nach Deutschland
+// kommen?": "yes", "no", or empty for "Weiß ich nicht".
+export type AbroadAnswer = "yes" | "no" | "";
+// A call fits when any declared row fits. "Nein" folds a call away only when
+// every row is from_abroad ("other"); "Ja" leaves an in_germany-only call in the
+// list without "Passt zu dir" ("check"): an EU citizen coming from abroad, for
+// example, qualifies for many of them.
+export function originFit(origins: OriginTag[], answer: string | null | undefined): ScopeFit | null {
+  if (!origins.length || (answer !== "yes" && answer !== "no")) return null;
+  if (answer === "no") return origins.every(row => row.origin === "from_abroad") ? "other" : "own";
+  return origins.every(row => row.origin === "in_germany") ? "check" : "own";
+}

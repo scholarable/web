@@ -14,8 +14,9 @@ import { CvOnboarding, type ConfirmedCvImport } from "./cv-onboarding";
 import { DownIcon, EditIcon, LogoMark, SendIcon } from "./icons";
 import { HeroFigures, HeroFiguresRow } from "./hero-figures";
 
-// subjectInfo: a taxonomy subject's German name and Fächergruppe (profileOptions).
-type Options = { state: "ready" | "unavailable"; institution: string[]; subject: string[]; subjectInfo?: SubjectInfo; usesStudyPlan: boolean };
+// subjectInfo: a taxonomy subject's German name and Fächergruppe (profileOptions);
+// askAbroad: some listed call is declared only for applicants from abroad.
+type Options = { state: "ready" | "unavailable"; institution: string[]; subject: string[]; subjectInfo?: SubjectInfo; askAbroad?: boolean; usesStudyPlan: boolean };
 type Question = { field: AnswerField; text: string; chips: [string, string][] };
 const plans: [string, string][] = [["exchange", "Auslandsaufenthalt"], ["internship", "Praktikum"], ["thesis", "Abschlussarbeit"], ["graduation", "Abschluss"]];
 const humanize = (value: string) => value.replaceAll("_", " ");
@@ -23,7 +24,11 @@ const subjectName = (value: string, options: Pick<Options, "subjectInfo">) => op
 // The answers after the choices: the student's own is not among them, or not decided yet.
 const notListed = { subject: [NOT_LISTED, "Mein Fach ist nicht dabei"] as [string, string], institution: [NOT_LISTED, "Meine Hochschule ist nicht dabei"] as [string, string] };
 const open: [string, string] = ["", "Noch offen"];
-const fieldWords: Record<AnswerField, string> = { degree_level: "Studium", adult: "18 oder älter", subject: "Fach", institution: "Hochschule", semester_number: "Fachsemester", future_plan: "Vorhaben" };
+const fieldWords: Record<AnswerField, string> = { degree_level: "Studium", adult: "18 oder älter", abroad: "Wohnort", subject: "Fach", institution: "Hochschule", semester_number: "Fachsemester", future_plan: "Vorhaben" };
+// Asked after level and age when it can change the list (owner decision 2026-10-28):
+// about where the student lives now, never their nationality. The answer stays in this tab.
+const abroadQuestion: Question = { field: "abroad", text: "Lebst du gerade im Ausland und willst zum Studium nach Deutschland kommen?",
+  chips: [["yes", "Ja"], ["no", "Nein, ich bin schon in Deutschland"], ["", "Weiß ich nicht"]] };
 
 export function recordDiscoveryEvent(event: string, elapsedMs?: number) {
   const body = JSON.stringify({ event, ...(elapsedMs === undefined ? {} : { elapsedMs }) });
@@ -36,14 +41,16 @@ export function markCorrection(seen: Set<string>, field: string, before: string,
   return true;
 }
 
-// The questions the catalogue can use, in order. Subject and university are
-// asked only when listed calls name some (taxonomy subjects, specific
+// The questions the catalogue can use, in order. "Aus dem Ausland" is asked
+// only when a listed call is declared only for applicants from abroad; subject
+// and university only when listed calls name some (taxonomy subjects, specific
 // universities or rule values); semester and plans only when a result needs
 // them or the catalogue uses them.
 export function questions(options: Options, answers: Pick<AnswersState, "result">): Question[] {
   const list: Question[] = [
     { field: "degree_level", text: "Was studierst du gerade, oder was hast du vor?", chips: [["bachelor", "Bachelor"], ["master", "Master"], ["doctoral", "Promotion"], ["", "Weiß ich noch nicht"]] },
     { field: "adult", text: "Kurze Frage: Bist du 18 oder älter? Scholarable ist vorerst nur für Volljährige. Ich merke mir nur Ja oder Nein, nicht dein Alter.", chips: [["yes", "Ja, 18 oder älter"], ["no", "Nein"]] },
+    ...(options.askAbroad ? [abroadQuestion] : []),
   ];
   if (options.subject.length) list.push({ field: "subject", text: "Welches Fach studierst du?", chips: [...options.subject.slice(0, 8).map(value => [value, subjectName(value, options)] as [string, string]), notListed.subject, open] });
   if (options.institution.length) list.push({ field: "institution", text: "Wo studierst du, oder wo willst du hin?", chips: [...options.institution.slice(0, 8).map(value => [value, value] as [string, string]), notListed.institution, open] });
@@ -58,6 +65,7 @@ export function nextQuestion(options: Options, answers: Pick<AnswersState, "resu
 }
 const answerLabel = (field: AnswerField, value: string, options: Options) => {
   if (field === "adult") return value === "yes" ? "18+" : "Unter 18";
+  if (field === "abroad") return value === "yes" ? "Aus dem Ausland" : value === "no" ? "Schon in Deutschland" : "Weiß ich nicht";
   if (field === "degree_level") return levelName(value);
   if (field === "future_plan") return plans.find(([key]) => key === value)?.[1] || value;
   if (field === "semester_number") return `${value}. Semester`;
@@ -90,11 +98,12 @@ const listDe = (parts: string[]) => parts.length > 1 ? `${parts.slice(0, -1).joi
 export function resultSummary(items: ScholarshipListItem[], answers: AnswersState): string {
   if (!answers.result || !answers.facts.degree_level) return "";
   const level = levelName(answers.facts.degree_level);
-  const list = arrangeList(items, answers.result, { institution: answers.facts.institution || null, subject: answers.facts.subject || null });
+  const list = arrangeList(items, answers.result, { institution: answers.facts.institution || null, subject: answers.facts.subject || null, abroad: answers.facts.abroad || null });
   const named = list.shown.length, rest = list.unstated.length;
   const folded = [
     list.otherUniversity.length ? `${list.otherUniversity.length} nur für Studierende anderer Hochschulen` : "",
     list.otherSubject.length ? `${list.otherSubject.length} nur für andere Fächer` : "",
+    list.otherOrigin.length ? `${list.otherOrigin.length} nur für Bewerbungen aus dem Ausland` : "",
     list.conflicts.length ? `${list.conflicts.length} ${list.conflicts.length === 1 ? "passt" : "passen"} laut Regeln nicht` : "",
   ].filter(Boolean);
   return [
@@ -286,7 +295,7 @@ export function DiscoveryChat({ options, items, total = items.length, studentAcc
   }
 
   const question = !answers.proposal ? nextQuestion(options, answers) : null;
-  const given = (["degree_level", "adult", "subject", "institution", "semester_number", "future_plan"] as AnswerField[])
+  const given = (["degree_level", "adult", "abroad", "subject", "institution", "semester_number", "future_plan"] as AnswerField[])
     .filter(field => field === "adult" ? answers.adult : answers.facts[field as keyof DiscoveryFacts]);
   const composer = (big: boolean, placeholder: string) => <form className={`composer${big ? " big" : ""}`} method="post" action="/match" onSubmit={read} autoComplete="off">
     <label htmlFor="scholarship-goal" className="sr-only">Nachricht an Scholarable</label>
@@ -318,7 +327,7 @@ export function DiscoveryChat({ options, items, total = items.length, studentAcc
     {showCv && <div className="cv-panel"><CvOnboarding options={options} onApply={useCv} /></div>}
   </>;
 
-  if (manualEntry) return <ShortForm options={options} ready={ready} onDone={facts => { begin(); setAnswers({ facts: facts.facts, adult: facts.adult, asked: ["degree_level", "adult", "subject", "institution", "semester_number", "future_plan"] }); void match(facts.facts); }} />;
+  if (manualEntry) return <ShortForm options={options} ready={ready} onDone={facts => { begin(); setAnswers({ facts: facts.facts, adult: facts.adult, asked: ["degree_level", "adult", "abroad", "subject", "institution", "semester_number", "future_plan"] }); void match(facts.facts); }} />;
 
   if (!started) return <section className="hero start" aria-labelledby="hero-h"><HeroFigures /><div className="hero-in">
     <h1 id="hero-h">Finde dein <em>Stipendium.</em></h1>
@@ -371,7 +380,7 @@ function ShortForm({ options, ready, onDone }: { options: Options; ready: boolea
     if (form.get("adult") !== "yes") { setError("Scholarable ist vorerst nur für Volljährige. Ansehen kannst du alle Stipendien trotzdem."); return; }
     setError(null);
     const value = (name: string) => String(form.get(name) || "");
-    onDone({ adult: "yes", facts: { degree_level: value("degree_level"), subject: value("subject"), institution: value("institution"), semester_number: value("semester_number"), future_plan: value("future_plan") } });
+    onDone({ adult: "yes", facts: { degree_level: value("degree_level"), abroad: value("abroad"), subject: value("subject"), institution: value("institution"), semester_number: value("semester_number"), future_plan: value("future_plan") } });
   }
   return <section className="hero thread-mode" aria-labelledby="form-h"><div className="hero-in">
     <h1 id="form-h" className="form-title">Deine Angaben</h1>
@@ -380,6 +389,7 @@ function ShortForm({ options, ready, onDone }: { options: Options; ready: boolea
       <fieldset className="age-confirmation"><legend>Bist du 18 oder älter?</legend>
         <label><input type="radio" name="adult" value="yes" required /> Ja</label><label><input type="radio" name="adult" value="no" /> Nein</label></fieldset>
       <label>Studium<select name="degree_level" defaultValue={answers.facts.degree_level || ""}><option value="">Weiß ich nicht</option><option value="prefer_not_to_say">Möchte ich nicht sagen</option><option value="bachelor">Bachelor</option><option value="master">Master</option><option value="doctoral">Promotion</option></select></label>
+      {options.askAbroad && <label>{abroadQuestion.text}<select name="abroad" defaultValue={answers.facts.abroad || ""}>{[...abroadQuestion.chips.slice(2), ...abroadQuestion.chips.slice(0, 2)].map(([value, label]) => <option key={label} value={value}>{label}</option>)}</select></label>}
       {options.subject.length > 0 && <label>Fach<select name="subject" defaultValue={answers.facts.subject || ""}><option value="">Weiß ich nicht</option><option value={NOT_LISTED}>Mein Fach ist nicht dabei</option><option value="prefer_not_to_say">Möchte ich nicht sagen</option>{subjectOptions(options)}</select></label>}
       {options.institution.length > 0 && <label>Hochschule<select name="institution" defaultValue={answers.facts.institution || ""}><option value="">Weiß ich nicht</option><option value={NOT_LISTED}>Meine Hochschule ist nicht dabei</option><option value="prefer_not_to_say">Möchte ich nicht sagen</option>{options.institution.map(value => <option key={value} value={value}>{value}</option>)}</select></label>}
       <label>Fachsemester<select name="semester_number" defaultValue={answers.facts.semester_number || ""}><option value="">Weiß ich nicht</option><option value="prefer_not_to_say">Möchte ich nicht sagen</option>{Array.from({ length: 20 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select></label>

@@ -19,7 +19,7 @@ const flat = (minor: number) => [{ id: "flat", track_id: null, condition_group_i
 type Shape = { deadline?: string | null; status?: string; opens?: string; levels?: string[]; applyNow?: boolean; family?: string | null; provider?: string; institutions?: string[]; minor?: number };
 function item(id: string, { deadline = "2026-11-30", status = "open", opens, levels = ["bachelor"], applyNow = status === "open", family = null, provider = `Hochschule ${id}`, institutions = [], minor = 30000 }: Shape = {}): ScholarshipListItem {
   const window = { id: "w", window_type: "application", deadline_on: deadline, deadline_precision: deadline ? "date_only" : "unknown", ...(opens ? { opens_on: opens, opens_precision: "date_only" } : {}) };
-  return { id, slug: `deutschlandstipendium-${id}`, title: `Deutschlandstipendium an der ${provider}`, provider, funding: "", deadline: "", audience: "", status: "open", lastChecked: null, applyNow, family, institutions, subjects: [],
+  return { id, slug: `deutschlandstipendium-${id}`, title: `Deutschlandstipendium an der ${provider}`, provider, funding: "", deadline: "", audience: "", status: "open", lastChecked: null, applyNow, family, institutions, subjects: [], origins: [],
     card: cardFacts({ funding: flat(minor), tracks: [], windows: [window], applicationStatus: status, effectiveState: null, deadlineOn: deadline, summaryMoney: {}, levels, levelRuleIds: levels.length ? ["level"] : [],
       subjectScope: "all", institutionScope: family ? "selected" : "all" }, today) };
 }

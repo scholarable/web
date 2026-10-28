@@ -22,7 +22,7 @@ type Shape = { deadline?: string; levels?: string[]; family?: string | null; pro
 function call(id: string, { deadline = "2026-12-01", levels = [], family = null, provider = `Anbieter ${id}`, institutions = [], institutionScope = institutions.length ? "selected" : "all",
   subjectScope = "all", subjects = [], applyNow = true }: Shape = {}): ScholarshipListItem {
   const window = { id: "w", window_type: "application", deadline_on: deadline, deadline_precision: "date_only" };
-  return { id, slug: `call-${id}`, title: `Ausschreibung ${id}`, provider, funding: "", deadline: "", audience: "", status: "open", lastChecked: null, applyNow, family, institutions, subjects,
+  return { id, slug: `call-${id}`, title: `Ausschreibung ${id}`, provider, funding: "", deadline: "", audience: "", status: "open", lastChecked: null, applyNow, family, institutions, subjects, origins: [],
     card: cardFacts({ funding: [], tracks: [], windows: [window], applicationStatus: "open", effectiveState: null, deadlineOn: deadline,
       summaryMoney: { min: 30000, max: 30000, currency: "EUR", frequency: "monthly" }, levels, levelRuleIds: levels.length ? ["level"] : [], subjectScope, institutionScope }, today) };
 }

@@ -1,6 +1,9 @@
 import type { SubjectInfo } from "./study-fit";
 
-export type DiscoveryFacts = Partial<Record<"institution" | "degree_level" | "subject" | "semester_number" | "future_plan", string>>;
+// abroad: the answer to "Lebst du gerade im Ausland und willst zum Studium nach
+// Deutschland kommen?" ("yes", "no"; empty for "Weiß ich nicht"). It stays in
+// this tab: matchRequest leaves it out, so it never reaches matching or a profile.
+export type DiscoveryFacts = Partial<Record<"institution" | "degree_level" | "subject" | "semester_number" | "future_plan" | "abroad", string>>;
 
 export type DiscoveryInterpretation = {
   facts: DiscoveryFacts;

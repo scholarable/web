@@ -170,16 +170,23 @@ export const SERVING_VIEWS_ONCE = `details as materialized (select call_id, deta
   families as materialized (select call_id, family, institutions from public_call_families),
   matching as materialized (select call_id, matching_payload from matching_ready_calls),
   universities as materialized (select call_id, name from public_call_institutions),
-  subjects as materialized (select call_id, code, name, group_code, group_name from public_call_subjects)`;
+  subjects as materialized (select call_id, code, name, group_code, group_name from public_call_subjects),
+  origins as materialized (select call_id, track_id, origin, groups_de from public_call_origins)`;
 // Per call, the universities (public_call_institutions) and taxonomy subjects
 // (public_call_subjects) of a call that is only for some, as JSON lists. A
 // family's names (public_call_families) stand in when the call has none there.
+// declared_origins: whom the call (or each track) is for by where the applicant
+// lives now, from the reviewed declarations (public_call_origins).
 export const SCOPE_LISTS = `named_universities as (select call_id, jsonb_agg(name order by name) as names from universities group by call_id),
   named_subjects as (select call_id, jsonb_agg(jsonb_build_object('code', code, 'name', name, 'group', group_code, 'group_name', group_name)
-    order by name, code) as tags from subjects group by call_id)`;
-export const SCOPE_COLUMNS = `coalesce(nu.names, f.institutions, '[]'::jsonb) as institutions, coalesce(ns.tags, '[]'::jsonb) as taxonomy_tags`;
+    order by name, code) as tags from subjects group by call_id),
+  declared_origins as (select call_id, jsonb_agg(jsonb_build_object('track_id', track_id::text, 'origin', origin, 'groups', groups_de)
+    order by track_id nulls first) as declared from origins group by call_id)`;
+export const SCOPE_COLUMNS = `coalesce(nu.names, f.institutions, '[]'::jsonb) as institutions, coalesce(ns.tags, '[]'::jsonb) as taxonomy_tags,
+      coalesce(od.declared, '[]'::jsonb) as origins`;
 export const SCOPE_JOINS = `left join named_universities nu on nu.call_id = r.id
-      left join named_subjects ns on ns.call_id = r.id`;
+      left join named_subjects ns on ns.call_id = r.id
+      left join declared_origins od on od.call_id = r.id`;
 export function browseQuery(filters: BrowseFilters) {
   // Only this closed pair of identifiers is interpolated; user values stay parameters.
   // apply_now says whether a listed call is in apply_now_calls ("Jetzt offen").
