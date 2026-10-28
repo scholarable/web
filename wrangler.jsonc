@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scholarable",
+  "workers_dev": false,
+  "preview_urls": false,
+  "main": "./workers/app.ts",
+  "assets": { "directory": "./build/client", "binding": "ASSETS", "run_worker_first": true },
+  "services": [{ "binding": "SCHOLARABLE_DOCUMENT_SCANNER", "service": "scholarable-document-scanner" }],
+  "ai": { "binding": "AI" },
+  "triggers": { "crons": ["0 8 * * *"] },
+  "analytics_engine_datasets": [{ "binding": "SCHOLARABLE_DISCOVERY_ANALYTICS", "dataset": "scholarable_discovery" }],
+  "vars": { "SCHOLARABLE_CV_IMPORT_ENABLED": "true" },
+  "compatibility_date": "2026-09-12",
+  "compatibility_flags": ["nodejs_compat"]
+}

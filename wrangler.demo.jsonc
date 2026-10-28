@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scholarable-demo",
+  "main": "./workers/demo.ts",
+  "assets": {
+    "directory": "./build/client",
+    "binding": "ASSETS"
+  },
+  "compatibility_date": "2026-09-12",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": false
+  },
+  "ratelimits": [
+    {
+      "name": "DEMO_TRAFFIC_LIMIT",
+      "namespace_id": "2026091501",
+      "simple": {
+        "limit": 600,
+        "period": 60
+      }
+    }
+  ],
+  "limits": {
+    "cpu_ms": 1000
+  }
+}

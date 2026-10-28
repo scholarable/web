@@ -1,0 +1,31 @@
+.mcp.json
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Python tooling
+.venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+
+# Local operating-system and test output
+.DS_Store
+*.log
+
+# React Router / Worker build output
+node_modules/
+build/
+dist/
+.react-router/
+.wrangler/
+
+scanner/signatures/
+
+# Local Worker secrets and live-data preview configs. cloud-check uploads
+# untracked files that are not ignored, so these must never be picked up.
+.dev.vars
+.dev.vars.*
+*.live-check.*

@@ -1,0 +1,51 @@
+// German for the English messages the database and the writing helper raise. The English text stays the
+// key the routes match on; students only see the German line, or the fallback when a message is new.
+const messages: [RegExp, string][] = [
+  [/changed; reload/i, "Das hat sich in einem anderen Tab geändert. Lade die Seite neu, bevor du speicherst."],
+  [/Approve every required answer/i, "Gib erst jede Pflichtantwort frei, bevor du die Einreichung festhältst."],
+  [/Complete every required document/i, "Markier erst jedes Pflichtdokument als fertig, bevor du die Einreichung festhältst."],
+  [/exceeds its verified limit/i, "Die Antwort ist länger als die geprüfte Grenze des Anbieters."],
+  [/current verified application packet is required/i, "Dafür braucht es die aktuelle, geprüfte Fassung der Bewerbungsangaben."],
+  [/Refresh the current available application packet/i, "Übernimm erst die aktuelle Fassung der Bewerbungsangaben, bevor du die Einreichung festhältst."],
+  [/Save the opportunity before creating a workspace/i, "Merk dir das Stipendium, bevor du die Bewerbung vorbereitest."],
+  [/Save the opportunity before recording an outcome/i, "Merk dir das Stipendium, bevor du ein Ergebnis einträgst."],
+  [/Save the opportunity before tracking an application/i, "Merk dir das Stipendium, bevor du deinen Stand einträgst."],
+  [/valid application track/i, "Wähl eine gültige Gruppe, bevor du die Einreichung festhältst."],
+  [/valid application route/i, "Wähl einen gültigen Bewerbungsweg."],
+  [/snapshot limit reached/i, "Du hast die höchste Zahl an Einreichungs-Schnappschüssen erreicht."],
+  [/history limit reached/i, "Du hast die höchste Zahl an gespeicherten Versionen erreicht."],
+  [/deadline has expired/i, "Die geprüfte Frist ist abgelaufen."],
+  [/Answer library limit reached/i, "Deine Antwortbibliothek ist voll."],
+  [/Answer library item not found/i, "Diese Antwort gibt es in deiner Bibliothek nicht mehr."],
+  [/linked profile items must be owned and confirmed/i, "Verknüpfte Profileinträge müssen dir gehören und bestätigt sein."],
+  [/linked profile items|answer library/i, "Prüf die Antwort und die verknüpften Angaben."],
+  [/AI writing is not available/i, "Die KI-Schreibhilfe gibt es noch nicht."],
+  [/Select fewer sources/i, "Wähl weniger Material aus."],
+  [/selected fact is no longer confirmed/i, "Eine ausgewählte Angabe ist nicht mehr bestätigt oder widerspricht einer anderen."],
+  [/selected fact is too long/i, "Eine ausgewählte Angabe ist zu lang für die KI."],
+  [/selected prior answer needs review/i, "Prüf die ausgewählte frühere Antwort, bevor du sie wiederverwendest."],
+  [/Select at least one confirmed/i, "Wähl mindestens eine bestätigte Angabe oder Geschichte aus."],
+  [/Selected material is too long/i, "Das ausgewählte Material ist zu lang für die KI."],
+  [/cannot be reviewed by AI/i, "Diese Antwort kann die KI nicht prüfen."],
+  // The document library's replies.
+  [/^This document changed\. Reload/, "Dieses Dokument hat sich geändert. Lade die Seite neu und versuch es noch einmal."],
+  [/^Choose a category and agree to storage$/, "Wähl eine Art und stimm der Speicherung zu."],
+  [/^Choose a valid future review date$/, "Wähl ein gültiges Prüfdatum in der Zukunft."],
+  [/^Confirm continued storage and choose a valid review date$/, "Bestätige die weitere Speicherung und wähl ein gültiges Prüfdatum."],
+  [/^Document not found$|^Invalid document$/, "Dieses Dokument gibt es nicht mehr."],
+  [/^Invalid document version$/, "Diese Version gibt es nicht mehr."],
+  [/^Invalid application$/, "Diese Bewerbung gibt es nicht."],
+  [/^Document uploads unavailable$/, "Hochladen ist gerade nicht möglich."],
+  [/^Private uploads are limited to pilot accounts$/, "Hochladen ist nur für eingeladene Pilotkonten möglich."],
+  [/^Document safety check timed out$|^Invalid safety check response$/, "Die Sicherheitsprüfung hat nicht rechtzeitig geantwortet. Versuch es noch einmal."],
+  [/^This PDF could not pass the safety check$/, "Diese PDF hat die Sicherheitsprüfung nicht bestanden."],
+  [/^Invalid PDF$/, "Das ist keine gültige PDF-Datei."],
+  [/^Upload exceeds 5 MB$|^Upload one PDF, up to 5 MB$/, "Lade eine PDF-Datei mit höchstens 5 MB hoch."],
+  [/^Upload could not be read$|^Upload form required$|^Upload required$/, "Die Datei ließ sich nicht lesen. Wähl eine PDF-Datei und versuch es noch einmal."],
+  [/^Type DELETE to confirm$/, "Gib DELETE ein, um zu bestätigen."],
+  [/^Unknown document action$/, "Unbekannte Aktion."],
+];
+
+export function messageDe(message: string, fallback = "Das ließ sich so nicht speichern. Prüf deine Angaben.") {
+  return messages.find(([pattern]) => pattern.test(message))?.[1] || fallback;
+}

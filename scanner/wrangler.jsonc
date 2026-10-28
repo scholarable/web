@@ -1,0 +1,19 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "scholarable-document-scanner",
+  "account_id": "2935e59f75ffe5e0b6c6c13b97fc41af",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-05",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": false },
+  "vars": { "SCANNER_ENABLED": "false" },
+  "containers": [{
+    "class_name": "DocumentScanner",
+    "scheduling_policy": "durable_object",
+    "images": { "base": { "dockerfile": "./Dockerfile" } },
+    "observability": { "logs": { "enabled": false } }
+  }],
+  "durable_objects": { "bindings": [{ "name": "SCANNER", "class_name": "DocumentScanner" }] },
+  "exports": { "DocumentScanner": { "type": "durable-object", "storage": "sqlite" } }
+}

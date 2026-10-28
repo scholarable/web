@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scholarable",
+  "account_id": "2935e59f75ffe5e0b6c6c13b97fc41af",
+  "main": "./workers/app.ts",
+  "assets": { "directory": "./build/client", "binding": "ASSETS", "run_worker_first": true },
+  "ai": { "binding": "AI" },
+  "services": [{ "binding": "SCHOLARABLE_DOCUMENT_SCANNER", "service": "scholarable-document-scanner" }],
+  "compatibility_date": "2026-09-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": ["0 8 * * *"] },
+  "ratelimits": [{ "name": "SCHOLARABLE_CHAT_LIMIT", "namespace_id": "2026102001", "simple": { "limit": 60, "period": 60 } }],
+  "vars": {
+    "SCHOLARABLE_DOCUMENTS_ENABLED": "false",
+    "SCHOLARABLE_DOCUMENT_CLEANUP_ENABLED": "false",
+    "SCHOLARABLE_CV_IMPORT_ENABLED": "false",
+    "SCHOLARABLE_STUDENT_AUTH_ENABLED": "true",
+    "SCHOLARABLE_WRITING_ENABLED": "false",
+    "SCHOLARABLE_WRITING_TEST_ENABLED": "true",
+    "SCHOLARABLE_WRITING_GATEWAY_ID": "student-writing",
+    "SCHOLARABLE_WRITING_BUDGET_CONFIRMED": "true",
+    "SCHOLARABLE_CHAT_AI_ENABLED": "false",
+    "SCHOLARABLE_CHAT_GATEWAY_ID": "student-chat",
+    "SCHOLARABLE_CHAT_BUDGET_CONFIRMED": "false",
+    "WORKOS_CLIENT_ID": "client_01M2YMXS62CM78WB9DTX445QZ8",
+    "WORKOS_REDIRECT_URI": "https://scholarable.de/auth/callback"
+  },
+  "routes": [{ "pattern": "scholarable.de", "custom_domain": true }]
+}
